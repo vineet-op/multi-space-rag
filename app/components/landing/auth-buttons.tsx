@@ -1,7 +1,6 @@
 "use client";
 
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
-import { ArrowRight } from "lucide-react";
 
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/lib/utils";
