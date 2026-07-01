@@ -1,17 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ToolCall } from "@/lib/supabase";
 import {
   Wrench,
   CheckCircle2,
   XCircle,
   RefreshCw,
-  Loader2,
   ChevronDown,
   ChevronUp,
   ClipboardList,
+  Activity,
+  ShieldCheck,
 } from "lucide-react";
+
+const subtleTransition = { duration: 0.18, ease: "easeOut" as const };
 
 interface ToolCallLogProps {
   workspaceId: string;
@@ -28,68 +32,94 @@ function formatDate(iso: string): string {
 
 function ToolCallRow({ call }: { call: ToolCall }) {
   const [expanded, setExpanded] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
-      <button
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+      whileHover={reduceMotion ? undefined : { y: -1 }}
+      transition={subtleTransition}
+      className="overflow-hidden rounded-3xl border border-white/10 bg-white/4.5 shadow-lg shadow-black/10"
+    >
+      <motion.button
         onClick={() => setExpanded((s) => !s)}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+        whileTap={reduceMotion ? undefined : { scale: 0.995 }}
+        transition={{ duration: 0.1, ease: "easeOut" }}
+        className="flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-white/5.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
       >
-        {call.status === "success" ? (
-          <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-        ) : (
-          <XCircle className="w-4 h-4 text-destructive flex-shrink-0" />
-        )}
+        <span
+          className={`flex size-11 shrink-0 items-center justify-center rounded-2xl ${
+            call.status === "success"
+              ? "bg-emerald-500/12 text-emerald-300"
+              : "bg-destructive/12 text-destructive"
+          }`}
+        >
+          {call.status === "success" ? (
+            <CheckCircle2 className="size-5" />
+          ) : (
+            <XCircle className="size-5" />
+          )}
+        </span>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground font-mono">
+            <span className="truncate font-mono text-sm font-semibold text-white">
               {call.tool_name}
             </span>
             <span
-              className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+              className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                 call.status === "success"
-                  ? "bg-green-500/10 text-green-500"
+                  ? "bg-emerald-500/10 text-emerald-300"
                   : "bg-destructive/10 text-destructive"
               }`}
             >
               {call.status}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="mt-1 text-xs text-muted-foreground">
             {formatDate(call.created_at)}
           </p>
         </div>
 
         {expanded ? (
-          <ChevronUp className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+          <ChevronUp className="size-4 shrink-0 text-muted-foreground" />
         ) : (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+          <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
         )}
-      </button>
+      </motion.button>
 
+      <AnimatePresence initial={false}>
       {expanded && (
-        <div className="border-t border-border bg-muted/20 px-4 py-3 space-y-3">
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="space-y-3 border-t border-white/10 bg-black/20 px-4 py-4"
+        >
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Arguments
             </p>
-            <pre className="text-xs text-foreground bg-background border border-border rounded-md p-2.5 overflow-x-auto">
+            <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/30 p-3 text-xs leading-6 text-zinc-200">
               {JSON.stringify(call.arguments, null, 2)}
             </pre>
           </div>
 
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Result
             </p>
-            <pre className="text-xs text-foreground bg-background border border-border rounded-md p-2.5 overflow-x-auto">
+            <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/30 p-3 text-xs leading-6 text-zinc-200">
               {JSON.stringify(call.result, null, 2)}
             </pre>
           </div>
-        </div>
+        </motion.div>
       )}
-    </div>
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -97,6 +127,7 @@ export function ToolCallLog({ workspaceId }: ToolCallLogProps) {
   const [calls, setCalls] = useState<ToolCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const reduceMotion = useReducedMotion();
 
   const loadCalls = useCallback(async () => {
     setLoading(true);
@@ -127,68 +158,134 @@ export function ToolCallLog({ workspaceId }: ToolCallLogProps) {
   const errorCount = calls.filter((c) => c.status === "error").length;
 
   return (
-    <div className="h-full overflow-auto p-6 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="h-full overflow-auto">
+      <div className="mx-auto max-w-5xl px-5 py-6 sm:px-8 lg:py-8">
+      <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Tool Calls</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Every tool invocation the AI made in this workspace
+          <p className="mb-2 text-xs font-medium uppercase tracking-[0.22em] text-violet-200/80">
+            Operations
+          </p>
+          <h2 className="text-3xl font-semibold tracking-tight text-white">
+            Tool Calls
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Every assistant action is validated, executed server-side, and recorded
+            with its arguments and result.
           </p>
         </div>
-        <button
+        <motion.button
           onClick={loadCalls}
           disabled={loading}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          whileHover={reduceMotion || loading ? undefined : { scale: 1.01 }}
+          whileTap={reduceMotion || loading ? undefined : { scale: 0.99 }}
+          transition={subtleTransition}
+          className="flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/4.5 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/8 hover:text-white disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
-        </button>
+        </motion.button>
       </div>
 
       {/* Stats */}
       {calls.length > 0 && (
-        <div className="flex gap-3 mb-5">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border text-sm">
-            <Wrench className="w-3.5 h-3.5 text-primary" />
-            <span className="font-medium text-foreground">{calls.length}</span>
-            <span className="text-muted-foreground">total</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-sm">
-            <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-            <span className="font-medium text-green-500">{successCount}</span>
-            <span className="text-muted-foreground">success</span>
-          </div>
-          {errorCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
-              <XCircle className="w-3.5 h-3.5 text-destructive" />
-              <span className="font-medium text-destructive">{errorCount}</span>
-              <span className="text-muted-foreground">failed</span>
+        <div className="mb-6 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-3xl border border-white/10 bg-white/4.5 p-4">
+            <div className="mb-3 flex size-10 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-200">
+              <Wrench className="size-4" />
             </div>
-          )}
+            <p className="text-2xl font-semibold text-white">{calls.length}</p>
+            <p className="text-sm text-muted-foreground">total calls</p>
+          </div>
+          <div className="rounded-3xl border border-emerald-400/15 bg-emerald-500/10 p-4">
+            <div className="mb-3 flex size-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-200">
+              <CheckCircle2 className="size-4" />
+            </div>
+            <p className="text-2xl font-semibold text-emerald-200">{successCount}</p>
+            <p className="text-sm text-muted-foreground">successful</p>
+          </div>
+          <div className="rounded-3xl border border-white/10 bg-white/4.5 p-4">
+            <div className="mb-3 flex size-10 items-center justify-center rounded-2xl bg-white/6 text-sky-200">
+              <ShieldCheck className="size-4" />
+            </div>
+            <p className="text-2xl font-semibold text-white">{errorCount}</p>
+            <p className="text-sm text-muted-foreground">failed calls</p>
+          </div>
         </div>
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        <div className="flex items-center justify-center py-20">
+          <ToolCallSkeleton />
         </div>
       ) : error ? (
-        <div className="text-sm text-destructive py-4">{error}</div>
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={subtleTransition}
+          className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
+          {error}
+        </motion.div>
       ) : calls.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <ClipboardList className="w-8 h-8 text-muted-foreground/40 mb-3" />
-          <p className="text-sm text-muted-foreground">No tool calls yet</p>
-          <p className="text-xs text-muted-foreground mt-1 opacity-70">
+        <div className="flex flex-col items-center justify-center rounded-[2rem] border border-white/10 bg-white/3.5 px-6 py-16 text-center">
+          <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-white/6 text-violet-200">
+            <ClipboardList className="size-7" />
+          </div>
+          <p className="text-base font-semibold text-white">No tool calls yet</p>
+          <p className="mt-2 text-sm text-muted-foreground">
             Ask the AI to save a task or send a Discord summary
           </p>
+          <div className="mt-5 flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs text-muted-foreground">
+            <Activity className="size-3.5 text-emerald-300" />
+            Waiting for the first action
+          </div>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
+          <AnimatePresence initial={false}>
           {calls.map((call) => (
             <ToolCallRow key={call.id} call={call} />
           ))}
+          </AnimatePresence>
         </div>
       )}
+      </div>
+    </div>
+  );
+}
+
+function ToolCallSkeleton() {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <div className="w-full max-w-lg space-y-3 rounded-3xl border border-white/10 bg-white/4 p-4">
+      {[0, 1, 2].map((row) => (
+        <div key={row} className="flex items-center gap-3">
+          <div className="size-11 rounded-2xl bg-white/8" />
+          <div className="flex-1 space-y-2">
+            {[0, 1].map((line) => (
+              <div
+                key={line}
+                className="relative h-2 overflow-hidden rounded-full bg-white/8"
+              >
+                {!reduceMotion && (
+                  <motion.div
+                    className="absolute inset-y-0 w-1/3 rounded-full bg-white/15"
+                    initial={{ x: "-100%" }}
+                    animate={{ x: "320%" }}
+                    transition={{
+                      duration: 1.4,
+                      repeat: Infinity,
+                      ease: "linear",
+                      delay: row * 0.08 + line * 0.04,
+                    }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ChatMessage, Citation } from "@/lib/supabase";
 import {
   Send,
@@ -13,7 +14,12 @@ import {
   AlertCircle,
   BookOpen,
   Trash2,
+  Sparkles,
+  Quote,
+  SearchCheck,
 } from "lucide-react";
+
+const subtleTransition = { duration: 0.18, ease: "easeOut" as const };
 
 interface RetrievalDebug {
   doc_name: string;
@@ -44,6 +50,7 @@ export function ChatInterface({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const reduceMotion = useReducedMotion();
 
   const loadHistory = useCallback(async () => {
     setLoadingHistory(true);
@@ -220,83 +227,144 @@ export function ChatInterface({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.10),transparent_32rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border flex-shrink-0">
+      <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-4 sm:px-7">
         <div className="flex items-center gap-2">
-          <Bot className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium text-foreground">
-            Chat · {workspaceName}
-          </span>
+          <div className="flex size-9 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-500/20">
+            <Bot className="size-4 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">
+              Ask ContextVault
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Grounded in {workspaceName}
+            </p>
+          </div>
         </div>
         {messages.length > 0 && (
           <button
             onClick={clearHistory}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
+            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/4.5 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="size-3.5" />
             Clear history
           </button>
         )}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 space-y-5 overflow-y-auto px-4 py-6 sm:px-7 lg:px-10">
         {loadingHistory ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-24">
+            <LoadingSkeleton label="Loading conversation" />
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Bot className="w-10 h-10 text-muted-foreground/40 mb-4" />
-            <p className="text-sm font-medium text-foreground">
-              Ask anything about your documents
+          <div className="mx-auto flex min-h-[58vh] max-w-3xl flex-col items-center justify-center text-center">
+            <div className="relative mb-7">
+              <div className="absolute inset-0 rounded-full bg-violet-500/30 blur-2xl" />
+              <div className="relative flex size-16 items-center justify-center rounded-[1.4rem] border border-white/10 bg-white/8 shadow-2xl shadow-black/30 backdrop-blur-xl">
+                <Sparkles className="size-7 text-violet-200" />
+              </div>
+            </div>
+            <p className="mb-3 text-sm font-medium uppercase tracking-[0.24em] text-violet-200/80">
+              Workspace intelligence
             </p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-              Upload PDFs in the Documents tab, then come back and ask questions
+            <h2 className="text-balance text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+              Ask precise questions.
+              <span className="block text-gradient">Get cited answers.</span>
+            </h2>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">
+              ContextVault retrieves only from this workspace, cites the source chunks,
+              and can take approved actions when you ask.
             </p>
+            <div className="mt-8 grid w-full max-w-2xl gap-3 sm:grid-cols-3">
+              {[
+                "Summarize this workspace",
+                "What decisions are mentioned?",
+                "Save a follow-up task",
+              ].map((example) => (
+                <motion.button
+                  key={example}
+                  onClick={() => {
+                    setInput(example);
+                    inputRef.current?.focus();
+                  }}
+                  whileHover={reduceMotion ? undefined : { y: -1, scale: 1.01 }}
+                  whileTap={reduceMotion ? undefined : { scale: 0.99 }}
+                  transition={subtleTransition}
+                  className="rounded-2xl border border-white/10 bg-white/4.5 px-4 py-3 text-left text-sm text-zinc-300 transition-all hover:-translate-y-0.5 hover:border-violet-400/40 hover:bg-white/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+                >
+                  {example}
+                </motion.button>
+              ))}
+            </div>
           </div>
         ) : (
-          messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))
-        )}
-
-        {error && (
-          <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            {error}
+          <div className="mx-auto w-full max-w-4xl space-y-6">
+            <AnimatePresence initial={false}>
+              {messages.map((msg) => (
+                <MessageBubble key={msg.id} message={msg} />
+              ))}
+            </AnimatePresence>
           </div>
         )}
+
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -2 }}
+              transition={subtleTransition}
+              className="mx-auto flex max-w-4xl items-center gap-2 rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            >
+              <AlertCircle className="size-4 shrink-0" />
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div ref={bottomRef} />
       </div>
 
       {/* Input */}
-      <div className="flex-shrink-0 border-t border-border px-4 py-3">
-        <div className="flex items-end gap-2">
+      <div className="shrink-0 border-t border-white/10 bg-black/10 px-4 py-4 backdrop-blur-xl sm:px-7">
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-2 flex items-center justify-between px-1 text-[11px] text-muted-foreground">
+            <span>Enter to send · Shift Enter for a new line</span>
+            <span>{input.length}/4000</span>
+          </div>
+          <div className="flex items-end gap-2 rounded-[1.35rem] border border-white/10 bg-white/6 p-2 shadow-2xl shadow-black/20 transition-colors focus-within:border-violet-400/40 focus-within:bg-white/8">
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask a question… (Enter to send, Shift+Enter for newline)"
+            placeholder="Ask a question about this workspace..."
             rows={1}
             disabled={sending}
-            className="flex-1 px-3 py-2.5 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary disabled:opacity-50 min-h-[42px] max-h-32 overflow-y-auto"
+            maxLength={4000}
+            className="max-h-36 min-h-[44px] flex-1 resize-none overflow-y-auto rounded-2xl border-0 bg-transparent px-3 py-3 text-sm leading-6 text-white placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
             style={{ fieldSizing: "content" } as React.CSSProperties}
           />
-          <button
+          <motion.button
             onClick={sendMessage}
             disabled={!input.trim() || sending}
-            className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            whileHover={reduceMotion || !input.trim() || sending ? undefined : { scale: 1.02 }}
+            whileTap={reduceMotion || !input.trim() || sending ? undefined : { scale: 0.98 }}
+            transition={{ duration: 0.1, ease: "easeOut" }}
+            className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white text-zinc-950 shadow-lg shadow-black/20 transition-all hover:scale-[1.02] hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-45"
+            aria-label="Send message"
           >
             {sending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
-              <Send className="w-4 h-4" />
+              <Send className="size-4" />
             )}
-          </button>
+          </motion.button>
+          </div>
         </div>
       </div>
     </div>
@@ -307,43 +375,61 @@ function MessageBubble({ message }: { message: ExtendedMessage }) {
   const isUser = message.role === "user";
   const [showDebug, setShowDebug] = useState(false);
   const [showCitations, setShowCitations] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   return (
-    <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+    <motion.div
+      layout={false}
+      initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className={`flex gap-4 ${isUser ? "justify-end" : "justify-start"}`}
+    >
       {/* Avatar */}
-      <div
-        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-          isUser ? "bg-primary/20" : "bg-muted"
-        }`}
-      >
-        {isUser ? (
-          <User className="w-3.5 h-3.5 text-primary" />
-        ) : (
-          <Bot className="w-3.5 h-3.5 text-muted-foreground" />
-        )}
-      </div>
+      {!isUser && (
+        <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-linear-to-br from-violet-500/25 to-sky-500/10 text-violet-100 shadow-lg shadow-black/15">
+          <Bot className="size-4" />
+        </div>
+      )}
 
       {/* Bubble */}
       <div
-        className={`max-w-[75%] flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"}`}
+        className={`flex max-w-[88%] flex-col gap-3 sm:max-w-[78%] ${
+          isUser ? "items-end" : "items-start"
+        }`}
       >
         <div
-          className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+          className={`whitespace-pre-wrap text-sm leading-7 shadow-xl shadow-black/10 ${
             isUser
-              ? "bg-primary text-primary-foreground rounded-tr-sm"
-              : "bg-muted text-foreground rounded-tl-sm"
+              ? "rounded-[1.4rem] rounded-tr-md bg-white px-5 py-3.5 text-zinc-950"
+              : "rounded-[1.4rem] rounded-tl-md border border-white/10 bg-white/5.5 px-5 py-4 text-zinc-100 backdrop-blur-xl"
           }`}
         >
           {message.streaming && !message.content ? (
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              Thinking…
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <span className="flex gap-1">
+                {[0, 0.12, 0.24].map((delay) => (
+                  <motion.span
+                    key={delay}
+                    animate={reduceMotion ? undefined : { opacity: [0.35, 1, 0.35] }}
+                    transition={{
+                      duration: 1.1,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay,
+                    }}
+                    className="size-1.5 rounded-full bg-violet-300"
+                  />
+                ))}
+              </span>
+              Reading workspace context...
             </span>
           ) : (
             message.content
           )}
           {message.streaming && message.content && (
-            <span className="inline-block w-1.5 h-4 bg-current animate-pulse ml-0.5 align-middle" />
+            <span className="ml-1 inline-block h-4 w-1.5 animate-pulse rounded-full bg-violet-300 align-middle" />
           )}
         </div>
 
@@ -351,13 +437,16 @@ function MessageBubble({ message }: { message: ExtendedMessage }) {
         {message.tool_events && message.tool_events.length > 0 && (
           <div className="flex flex-col gap-1 w-full">
             {message.tool_events.map((event, i) => (
-              <div
+              <motion.div
                 key={i}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 border border-border rounded-md px-2.5 py-1.5"
+                initial={reduceMotion ? false : { opacity: 0, y: 3 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={subtleTransition}
+                className="flex items-center gap-2 rounded-2xl border border-violet-400/20 bg-violet-500/10 px-3 py-2 text-xs text-violet-100"
               >
-                <Wrench className="w-3 h-3 text-primary flex-shrink-0" />
+                <Wrench className="size-3.5 shrink-0 text-violet-300" />
                 <span>Tool called: <strong>{(event as { name?: string }).name ?? "unknown"}</strong></span>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
@@ -370,29 +459,43 @@ function MessageBubble({ message }: { message: ExtendedMessage }) {
             <div className="w-full">
               <button
                 onClick={() => setShowCitations((s) => !s)}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
               >
-                <BookOpen className="w-3 h-3" />
+                <BookOpen className="size-3.5" />
                 {message.citations.length} source
                 {message.citations.length !== 1 ? "s" : ""}
                 {showCitations ? (
-                  <ChevronUp className="w-3 h-3" />
+                  <ChevronUp className="size-3" />
                 ) : (
-                  <ChevronDown className="w-3 h-3" />
+                  <ChevronDown className="size-3" />
                 )}
               </button>
+              <AnimatePresence initial={false}>
               {showCitations && (
-                <div className="mt-1.5 space-y-1">
+                <motion.div
+                  initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -2 }}
+                  transition={subtleTransition}
+                  className="mt-2 grid gap-2 sm:grid-cols-2"
+                >
                   {message.citations.map((c, i) => (
                     <div
                       key={i}
-                      className="text-xs text-muted-foreground bg-muted/40 border border-border rounded-md px-2.5 py-1.5"
+                      className="rounded-2xl border border-white/10 bg-white/4.5 px-3 py-2 text-xs text-muted-foreground"
                     >
-                      {c.doc_name} · chunk {c.chunk_index}
+                      <div className="mb-1 flex items-center gap-1.5 text-zinc-200">
+                        <Quote className="size-3 text-violet-300" />
+                        Source {i + 1}
+                      </div>
+                      <p className="truncate">
+                        {c.doc_name} · chunk {c.chunk_index}
+                      </p>
                     </div>
                   ))}
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
             </div>
           )}
 
@@ -404,35 +507,80 @@ function MessageBubble({ message }: { message: ExtendedMessage }) {
             <div className="w-full">
               <button
                 onClick={() => setShowDebug((s) => !s)}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
               >
-                <span className="opacity-60">⚙</span>
+                <SearchCheck className="size-3.5" />
                 Retrieval debug
                 {showDebug ? (
-                  <ChevronUp className="w-3 h-3" />
+                  <ChevronUp className="size-3" />
                 ) : (
-                  <ChevronDown className="w-3 h-3" />
+                  <ChevronDown className="size-3" />
                 )}
               </button>
+              <AnimatePresence initial={false}>
               {showDebug && (
-                <div className="mt-1.5 space-y-1.5 max-w-full">
+                <motion.div
+                  initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -2 }}
+                  transition={subtleTransition}
+                  className="mt-2 space-y-2 max-w-full"
+                >
                   {message.retrieval_debug.map((c, i) => (
                     <div
                       key={i}
-                      className="text-xs bg-muted/30 border border-border rounded-md px-2.5 py-2"
+                      className="rounded-2xl border border-white/10 bg-black/20 px-3 py-3 text-xs"
                     >
-                      <p className="font-medium text-foreground mb-0.5">
-                        {c.doc_name} · chunk {c.chunk_index}
+                      <p className="mb-1 font-medium text-white">
+                        {i + 1}. {c.doc_name} · chunk {c.chunk_index}
                       </p>
                       <p className="text-muted-foreground line-clamp-2">
                         {c.content_preview}…
                       </p>
                     </div>
                   ))}
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
             </div>
           )}
+      </div>
+      {isUser && (
+        <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white">
+          <User className="size-4" />
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function LoadingSkeleton({ label }: { label: string }) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/4 px-4 py-4">
+      <div className="mb-3 text-xs text-muted-foreground">{label}</div>
+      <div className="space-y-2">
+        {[0, 1, 2].map((row) => (
+          <div
+            key={row}
+            className="relative h-2 overflow-hidden rounded-full bg-white/8"
+          >
+            {!reduceMotion && (
+              <motion.div
+                className="absolute inset-y-0 w-1/3 rounded-full bg-white/15"
+                initial={{ x: "-100%" }}
+                animate={{ x: "320%" }}
+                transition={{
+                  duration: 1.4,
+                  repeat: Infinity,
+                  ease: "linear",
+                  delay: row * 0.08,
+                }}
+              />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

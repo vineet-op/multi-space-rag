@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { Workspace } from "@/lib/supabase";
 import {
   ChevronDown,
@@ -10,6 +11,8 @@ import {
   Loader2,
   FolderOpen,
 } from "lucide-react";
+
+const subtleTransition = { duration: 0.16, ease: "easeOut" as const };
 
 interface WorkspaceSwitcherProps {
   workspaces: Workspace[];
@@ -32,6 +35,7 @@ export function WorkspaceSwitcher({
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
   // Close on outside click
   useEffect(() => {
@@ -86,58 +90,88 @@ export function WorkspaceSwitcher({
   }
 
   return (
-    <div className="relative" ref={ref}>
-      <button
+    <div className="relative w-full" ref={ref}>
+      <motion.button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted text-sm font-medium text-foreground transition-colors max-w-[200px]"
+        whileHover={reduceMotion ? undefined : { scale: 1.01 }}
+        whileTap={reduceMotion ? undefined : { scale: 0.99 }}
+        transition={subtleTransition}
+        className="flex w-full max-w-[240px] items-center gap-2 rounded-2xl border border-white/10 bg-white/5.5 px-3 py-2.5 text-sm font-medium text-white shadow-lg shadow-black/10 transition-all hover:border-white/20 hover:bg-white/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 lg:max-w-full"
       >
-        <FolderOpen className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-200">
+          <FolderOpen className="size-4" />
+        </span>
         <span className="truncate">{activeWorkspace.name}</span>
-        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-      </button>
+        <ChevronDown className="ml-auto size-3.5 shrink-0 text-muted-foreground" />
+      </motion.button>
 
+      <AnimatePresence>
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl border border-border bg-background shadow-xl z-50 overflow-hidden">
-          <div className="p-1">
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, scale: 0.98, y: -4 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, y: -4 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="absolute right-0 top-full z-50 mt-2 w-72 origin-top overflow-hidden rounded-3xl border border-white/10 bg-[#171520]/95 shadow-2xl shadow-black/40 backdrop-blur-2xl lg:left-0 lg:right-auto"
+        >
+          <div className="border-b border-white/10 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Workspaces
+            </p>
+          </div>
+          <div className="p-2">
             {workspaces.map((ws) => (
-              <div
+              <motion.div
                 key={ws.id}
                 onClick={() => {
                   if (ws.id !== activeWorkspace.id) onSwitch(ws.id);
                   setOpen(false);
                 }}
-                className="flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-muted cursor-pointer group"
+                whileHover={reduceMotion ? undefined : { x: 1 }}
+                transition={subtleTransition}
+                className="group flex cursor-pointer items-center justify-between rounded-2xl px-3 py-2.5 transition-colors hover:bg-white/7"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   {ws.id === activeWorkspace.id ? (
-                    <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-violet-500 text-white">
+                      <Check className="size-3.5" />
+                    </span>
                   ) : (
-                    <div className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="size-6 shrink-0 rounded-full border border-white/10 bg-white/4" />
                   )}
-                  <span className="text-sm text-foreground truncate">
+                  <span className="truncate text-sm font-medium text-white">
                     {ws.name}
                   </span>
                 </div>
                 {workspaces.length > 1 && (
                   <button
                     onClick={(e) => handleDelete(e, ws.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                    className="rounded-lg p-1.5 text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
                     title="Delete workspace"
                   >
                     {deletingId === ws.id ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <Loader2 className="size-3 animate-spin" />
                     ) : (
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="size-3" />
                     )}
                   </button>
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
 
-          <div className="border-t border-border p-1">
+          <div className="border-t border-white/10 p-2">
+            <AnimatePresence mode="wait" initial={false}>
             {creating ? (
-              <form onSubmit={handleCreate} className="px-2 py-1.5">
+              <motion.form
+                key="create-form"
+                initial={reduceMotion ? false : { opacity: 0, y: 3 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
+                transition={subtleTransition}
+                onSubmit={handleCreate}
+                className="space-y-2 px-2 py-1.5"
+              >
                 <input
                   type="text"
                   value={newName}
@@ -145,40 +179,52 @@ export function WorkspaceSwitcher({
                   placeholder="Workspace name…"
                   maxLength={100}
                   autoFocus
-                  className="w-full px-2.5 py-1.5 text-sm rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary mb-1.5"
+                  className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/60"
                 />
                 <div className="flex gap-1.5">
-                  <button
+                  <motion.button
                     type="submit"
                     disabled={!newName.trim() || loading}
-                    className="flex-1 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                    whileTap={reduceMotion || !newName.trim() || loading ? undefined : { scale: 0.98 }}
+                    transition={{ duration: 0.1, ease: "easeOut" }}
+                    className="flex-1 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-zinc-950 transition-colors hover:bg-violet-100 disabled:opacity-50"
                   >
                     {loading ? "Creating…" : "Create"}
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
                     type="button"
                     onClick={() => {
                       setCreating(false);
                       setNewName("");
                     }}
-                    className="flex-1 py-1.5 rounded-md bg-muted text-foreground text-xs font-medium hover:bg-muted/80 transition-colors"
+                    whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                    transition={{ duration: 0.1, ease: "easeOut" }}
+                    className="flex-1 rounded-xl bg-white/8 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/12"
                   >
                     Cancel
-                  </button>
+                  </motion.button>
                 </div>
-              </form>
+              </motion.form>
             ) : (
-              <button
+              <motion.button
+                key="new-workspace"
                 onClick={() => setCreating(true)}
-                className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                initial={reduceMotion ? false : { opacity: 0, y: 3 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.99 }}
+                transition={subtleTransition}
+                className="flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/7 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="size-3.5" />
                 New workspace
-              </button>
+              </motion.button>
             )}
+            </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

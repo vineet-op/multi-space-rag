@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Database, Plus } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { Database, Plus, Sparkles, ShieldCheck } from "lucide-react";
 
 export default function NewWorkspacePage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -40,27 +42,60 @@ export default function NewWorkspacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Database className="w-5 h-5 text-primary" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-6">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-size-[72px_72px] mask-[radial-gradient(ellipse_75%_60%_at_50%_0%,black,transparent_75%)]"
+      />
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.24, ease: "easeOut" }}
+        className="relative w-full max-w-lg"
+      >
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: "easeOut", delay: 0.03 }}
+          className="mb-8 text-center"
+        >
+          <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-[1.4rem] bg-linear-to-br from-violet-500 via-indigo-500 to-sky-500 shadow-2xl shadow-violet-500/25">
+            <Database className="size-7 text-white" />
           </div>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">
-              Create your first workspace
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Workspaces keep your documents and chats separate
+          <p className="mb-3 flex items-center justify-center gap-2 text-xs font-medium uppercase tracking-[0.22em] text-violet-200/80">
+            <Sparkles className="size-3.5" />
+            Welcome to ContextVault
+          </p>
+          <h1 className="text-balance text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Create your first workspace
+          </h1>
+          <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
+            Workspaces isolate documents, chats, and tool actions so every project
+            stays clean and private.
+          </p>
+        </motion.div>
+
+        <motion.form
+          onSubmit={handleCreate}
+          initial={reduceMotion ? false : { opacity: 0, scale: 0.99 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.22, ease: "easeOut", delay: 0.06 }}
+          className="rounded-[2rem] border border-white/10 bg-white/5.5 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-6"
+        >
+          <div className="mb-5 rounded-2xl border border-emerald-400/15 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+            <div className="mb-1 flex items-center gap-2 font-medium">
+              <ShieldCheck className="size-4" />
+              Tenant isolation by default
+            </div>
+            <p className="text-xs leading-5 text-emerald-100/70">
+              Retrieval and tool logs are scoped to the workspace you create.
             </p>
           </div>
-        </div>
 
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div>
+          <div className="space-y-2">
             <label
               htmlFor="name"
-              className="block text-sm font-medium text-foreground mb-1.5"
+              className="block text-sm font-semibold text-white"
             >
               Workspace name
             </label>
@@ -71,25 +106,38 @@ export default function NewWorkspacePage() {
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Legal Documents, Product Research…"
               maxLength={100}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white placeholder:text-muted-foreground shadow-inner shadow-black/20 focus:outline-none focus:ring-2 focus:ring-primary/60"
               autoFocus
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          <AnimatePresence>
+            {error && (
+              <motion.p
+                initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -2 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                className="mt-4 rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              >
+                {error}
+              </motion.p>
+            )}
+          </AnimatePresence>
 
-          <button
+          <motion.button
             type="submit"
             disabled={!name.trim() || loading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            whileHover={reduceMotion || !name.trim() || loading ? undefined : { y: -1, scale: 1.01 }}
+            whileTap={reduceMotion || !name.trim() || loading ? undefined : { scale: 0.98 }}
+            transition={{ duration: 0.1, ease: "easeOut" }}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 font-semibold text-zinc-950 shadow-xl shadow-black/20 transition-all hover:-translate-y-0.5 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="size-4" />
             {loading ? "Creating…" : "Create workspace"}
-          </button>
-        </form>
-      </div>
+          </motion.button>
+        </motion.form>
+      </motion.div>
     </div>
   );
 }
