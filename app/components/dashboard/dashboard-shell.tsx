@@ -78,7 +78,7 @@ export function DashboardShell({
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <div className="relative h-screen overflow-hidden bg-background text-foreground">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-size-[72px_72px] mask-[radial-gradient(ellipse_80%_60%_at_50%_0%,black,transparent_75%)]"
@@ -88,7 +88,7 @@ export function DashboardShell({
         className="pointer-events-none absolute left-1/2 top-0 h-px w-2/3 -translate-x-1/2 bg-linear-to-r from-transparent via-violet-400/50 to-transparent"
       />
 
-      <div className="relative grid min-h-screen grid-cols-1 p-3 lg:grid-cols-[300px_1fr] lg:p-4">
+      <div className="relative grid h-full grid-cols-1 p-3 lg:grid-cols-[300px_1fr] lg:p-4">
         <motion.aside
           initial={reduceMotion ? false : { opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
@@ -183,7 +183,7 @@ export function DashboardShell({
           initial={reduceMotion ? false : { opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.22, ease: "easeOut", delay: 0.03 }}
-          className="flex min-w-0 flex-col lg:pl-4"
+          className="flex min-h-0 min-w-0 flex-col overflow-hidden lg:pl-4"
         >
           <header className="mb-3 flex flex-col gap-3 rounded-[1.75rem] border border-white/10 bg-white/4.5 p-3 shadow-2xl shadow-black/10 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between lg:p-4">
             <div className="flex items-center gap-3">

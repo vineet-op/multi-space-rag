@@ -262,9 +262,7 @@ export function DocumentList({ workspaceId }: DocumentListProps) {
 
       {/* Document list */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <DocumentSkeleton />
-        </div>
+        <DocumentSkeleton />
       ) : error ? (
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, y: 4 }}
@@ -329,38 +327,59 @@ export function DocumentList({ workspaceId }: DocumentListProps) {
   );
 }
 
-function DocumentSkeleton() {
+function ShimmerBar({
+  width = "w-full",
+  height = "h-2",
+  delay = 0,
+}: {
+  width?: string;
+  height?: string;
+  delay?: number;
+}) {
   const reduceMotion = useReducedMotion();
-
   return (
-    <div className="w-full max-w-lg space-y-3 rounded-3xl border border-white/10 bg-white/4 p-4">
-      {[0, 1, 2].map((row) => (
-        <div key={row} className="flex items-center gap-3">
-          <div className="size-10 rounded-2xl bg-white/8" />
-          <div className="flex-1 space-y-2">
-            {[0, 1].map((line) => (
-              <div
-                key={line}
-                className="relative h-2 overflow-hidden rounded-full bg-white/8"
-              >
-                {!reduceMotion && (
-                  <motion.div
-                    className="absolute inset-y-0 w-1/3 rounded-full bg-white/15"
-                    initial={{ x: "-100%" }}
-                    animate={{ x: "320%" }}
-                    transition={{
-                      duration: 1.4,
-                      repeat: Infinity,
-                      ease: "linear",
-                      delay: row * 0.08 + line * 0.04,
-                    }}
-                  />
-                )}
-              </div>
-            ))}
+    <div className={`relative overflow-hidden rounded-full bg-white/8 ${height} ${width}`}>
+      {!reduceMotion && (
+        <motion.div
+          className="absolute inset-y-0 w-1/3 rounded-full bg-white/15"
+          initial={{ x: "-100%" }}
+          animate={{ x: "320%" }}
+          transition={{ duration: 1.4, repeat: Infinity, ease: "linear", delay }}
+        />
+      )}
+    </div>
+  );
+}
+
+function DocumentSkeleton() {
+  return (
+    <div className="w-full space-y-6">
+      {/* Upload zone skeleton */}
+      <div className="flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-white/14 bg-white/4.5 p-12 gap-3">
+        <div className="size-14 rounded-2xl bg-white/8" />
+        <ShimmerBar width="w-48" height="h-3" delay={0} />
+        <ShimmerBar width="w-32" height="h-2" delay={0.05} />
+      </div>
+
+      {/* Document row skeletons */}
+      <div className="grid gap-3">
+        {[0, 1, 2].map((row) => (
+          <div
+            key={row}
+            className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/4.5 px-4 py-4"
+          >
+            {/* Icon placeholder */}
+            <div className="size-11 shrink-0 rounded-2xl bg-white/8" />
+            {/* Text lines */}
+            <div className="flex-1 space-y-2 min-w-0">
+              <ShimmerBar width="w-2/5" height="h-2.5" delay={row * 0.06} />
+              <ShimmerBar width="w-1/4" height="h-2" delay={row * 0.06 + 0.04} />
+            </div>
+            {/* Delete button placeholder */}
+            <div className="size-8 rounded-2xl bg-white/6 shrink-0" />
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
